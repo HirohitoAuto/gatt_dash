@@ -1,0 +1,2 @@
+# new_slot_finder
+バドミントンの空きslotがあればLINE通知をするためのスクリプト
