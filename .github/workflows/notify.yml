@@ -1,0 +1,49 @@
+name: LINE Notify New Events
+
+on:
+  schedule:
+    - cron: "0 * * * *" # 1時間ごとに実行（UTC）
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # sent_events.json をコミットするために必要
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+        working-directory: .
+
+      - name: Run notifier
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
+          WEB_PAGE_URL: ${{ secrets.WEB_PAGE_URL }}
+          SENT_EVENTS_PATH: sent_events.json
+        run: uv run python run.py
+        working-directory: app
+
+      # 送信済みリストをリポジトリにコミットして永続化
+      - name: Commit sent events list
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/sent_events.json
+          if git diff --cached --quiet; then
+            echo "送信済みリストに変更なし。スキップします。"
+          else
+            git commit -m "chore: update sent_events.json [skip ci]"
+            git push
+          fi
