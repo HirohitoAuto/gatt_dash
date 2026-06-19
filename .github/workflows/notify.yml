@@ -1,49 +1,48 @@
-name: LINE Notify New Events
+name: Notify new events
 
 on:
   schedule:
-    - cron: "0 * * * *" # 1時間ごとに実行（UTC）
-  workflow_dispatch: # 手動実行も可能
+    - cron: "0 1 * * 1" # 毎週月曜日の1時(UTC)に実行 = 日本時間午前10:00
+  workflow_dispatch: # 手動実行を可能にするトリガー
 
 jobs:
-  notify:
+  csv_update:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # sent_events.json をコミットするために必要
+      contents: write  # Required for committing and pushing changes
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: "3.12" # 必要なPythonのバージョンを指定
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync
-        working-directory: .
 
-      - name: Run notifier
-        env:
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
-          WEB_PAGE_URL: ${{ secrets.WEB_PAGE_URL }}
-          SENT_EVENTS_PATH: sent_events.json
-        run: uv run python run.py
-        working-directory: app
+      - name: Run scraping and notify
+        run: uv run python app/run.py
 
-      # 送信済みリストをリポジトリにコミットして永続化
-      - name: Commit sent events list
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add app/sent_events.json
-          if git diff --cached --quiet; then
-            echo "送信済みリストに変更なし。スキップします。"
-          else
-            git commit -m "chore: update sent_events.json [skip ci]"
-            git push
-          fi
+      # - name: Pull main branch
+      #   run: |
+      #     git fetch origin
+      #     git checkout main
+      #     git pull
+
+      # - name: Commit and push changes
+      #   run: |
+      #     git config --local user.name "github-actions[bot]"
+      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add scraping/data/*.csv
+      #     git diff --quiet && git diff --staged --quiet || git commit -m "Update CSV data"
+      #     git push origin main
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
