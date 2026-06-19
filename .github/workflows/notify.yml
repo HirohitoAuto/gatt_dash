@@ -1,0 +1,48 @@
+name: Notify new events
+
+on:
+  schedule:
+    - cron: "0 1 * * 1" # 毎週月曜日の1時(UTC)に実行 = 日本時間午前10:00
+  workflow_dispatch: # 手動実行を可能にするトリガー
+
+jobs:
+  csv_update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for committing and pushing changes
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.12" # 必要なPythonのバージョンを指定
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run scraping and notify
+        run: uv run python app/run.py
+
+      # - name: Pull main branch
+      #   run: |
+      #     git fetch origin
+      #     git checkout main
+      #     git pull
+
+      # - name: Commit and push changes
+      #   run: |
+      #     git config --local user.name "github-actions[bot]"
+      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add scraping/data/*.csv
+      #     git diff --quiet && git diff --staged --quiet || git commit -m "Update CSV data"
+      #     git push origin main
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
