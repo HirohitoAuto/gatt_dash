@@ -1,10 +1,24 @@
 import os
 
 from dotenv import load_dotenv
-from src.scraper import Scraper
+from src.scraper import Event, Scraper
 from src.utils.line_messenger import LineMessenger
 
 target_location = ["東住吉小学校"]
+
+
+def _create_message(event: Event) -> str:
+    message = f"""
+🆕 新規イベント
+
+【{event.title}】
+    - 日付: {event.date}
+    - 場所: {event.location}
+    - 参加人数: {event.participants}
+
+https://gat-batminton.1net.jp/137215.html#google_vignette
+"""
+    return message.strip()
 
 
 def main():
@@ -30,15 +44,13 @@ def main():
         for event in unresponded_events:
             if event.location in target_location:
                 print(f"\n【{event.title}】")
-                print(f"  日時: {event.date}")
+                print(f"  日付: {event.date}")
                 print(f"  場所: {event.location}")
                 print(f"  参加人数: {event.participants}")
                 print(f"  ステータス: {event.status}")
                 # LineMessengerを初期化
                 messenger = LineMessenger(channel_access_token, group_id)
-                messenger.push_message(
-                    f"【{event.title}】\n日時: {event.date}\n場所: {event.location}\n参加人数: {event.participants}"
-                )
+                messenger.push_message(_create_message(event))
 
 
 if __name__ == "__main__":
