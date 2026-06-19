@@ -1,5 +1,7 @@
 import os
+import re
 from dataclasses import dataclass
+from datetime import date as _date
 
 import requests
 from bs4 import BeautifulSoup
@@ -12,7 +14,7 @@ _RESPONDED_STATUSES = {"参加予定", "検討中", "不参加予定"}
 @dataclass
 class Event:
     title: str
-    date: str
+    date: int
     location: str
     participants: str
     status: str  # 未回答 / 参加予定 / 検討中 / 不参加予定 / 定員
@@ -68,8 +70,8 @@ class Scraper:
             return b.get_text(strip=True) if b else title_font.get_text(strip=True)
         return ""
 
-    def _extract_date_location(self, link) -> tuple[str, str]:
-        date = ""
+    def _extract_date_location(self, link) -> tuple[int, str]:
+        date: int | None = None
         location = ""
         for font in link.find_all("font", color="#666666"):
             text = font.get_text(separator="\n", strip=True)
@@ -77,12 +79,32 @@ class Scraper:
             if not lines:
                 continue
             # 日付は最初の行（太字）、場所は「場所：」を含む行
-            if not date:
-                date = lines[0]
+            if date is None:
+                date = self._parse_date(lines[0])
             for line in lines:
                 if line.startswith("場所："):
                     location = line.removeprefix("場所：")
-        return date, location
+        return date if date is not None else 0, location
+
+    def _parse_date(self, date_str: str) -> int | None:
+        """「m月d日」または「yyyy年m月d日」形式の文字列を yyyymmdd の int に変換する。
+        年が省略されている場合は当日以降に最も近い年を使用する。
+        """
+        # yyyy年m月d日 形式
+        m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", date_str)
+        if m:
+            return int(f"{m.group(1)}{int(m.group(2)):02d}{int(m.group(3)):02d}")
+        # m月d日 形式（年なし）
+        m = re.search(r"(\d{1,2})月(\d{1,2})日", date_str)
+        if m:
+            today = _date.today()
+            month, day = int(m.group(1)), int(m.group(2))
+            year = today.year
+            # その月日が今日より前なら翌年とみなす
+            if _date(year, month, day) < today:
+                year += 1
+            return int(f"{year}{month:02d}{day:02d}")
+        return None
 
     def _extract_participants(self, link) -> str:
         for font in link.find_all("font", color="#666666"):
