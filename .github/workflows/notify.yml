@@ -2,7 +2,7 @@ name: Notify new events
 
 on:
   schedule:
-    - cron: "0 1 * * 1" # 毎週月曜日の1時(UTC)に実行 = 日本時間午前10:00
+    - cron: "0 0-15 * * *" # 毎日UTC 00:00〜15:00の毎時実行 = 日本時間09:00〜24:00
   workflow_dispatch: # 手動実行を可能にするトリガー
 
 jobs:
