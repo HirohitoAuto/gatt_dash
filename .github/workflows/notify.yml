@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # 手動実行を可能にするトリガー
 
 jobs:
-  csv_update:
+  notify_new_events:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # Required for committing and pushing changes
@@ -30,6 +30,9 @@ jobs:
 
       - name: Run scraping and notify
         run: uv run python app/run.py
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
 
       # - name: Pull main branch
       #   run: |
