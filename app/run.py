@@ -1,13 +1,24 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from src.scraper import Event, Scraper
 from src.utils.line_messenger import LineMessenger
 from src.utils.sent_events_store import SentEventsStore
 
-target_location = ["東住吉小学校"]
+# Load environment variables from .env file if it exists
+script_dir = Path(__file__).parent
+env_path = script_dir.parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
 
-SENT_EVENTS_PATH = os.getenv("SENT_EVENTS_PATH", "sent_events.json")
+# 環境変数の取得
+channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
+group_id = os.getenv("LINE_GROUP_ID", "")
+web_page_url = os.getenv("WEB_PAGE_URL", "")
+
+# 通知対象のイベントの場所を指定
+target_location = ["東住吉小学校"]
 
 
 def _event_id(event: Event) -> str:
@@ -30,26 +41,14 @@ https://gat-batminton.1net.jp/137215.html#google_vignette
 
 
 def main():
-    # .envファイルから環境変数を読み込む
-    load_dotenv()
-
-    # 環境変数の取得
-    channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-    group_id = os.getenv("LINE_GROUP_ID")
-
-    # 環境変数が設定されているか確認
-    if not channel_access_token or not group_id:
-        raise ValueError(
-            "LINE_CHANNEL_ACCESS_TOKEN と LINE_GROUP_ID を .env ファイルに設定してください"
-        )
     # targetイベントを抽出
-    scraper = Scraper(os.getenv("WEB_PAGE_URL", "https://gatt.jp/"))
+    scraper = Scraper(web_page_url)
     unresponded_events = scraper.fetch_events()
     if not unresponded_events:
         print("イベントはありません。")
         return
     else:
-        store = SentEventsStore(SENT_EVENTS_PATH)
+        store = SentEventsStore("sent_events.json")
         for event in unresponded_events:
             if event.location not in target_location:
                 continue
