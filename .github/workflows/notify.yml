@@ -35,18 +35,18 @@ jobs:
           LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
           WEB_PAGE_URL: ${{ secrets.WEB_PAGE_URL }}
 
-      # - name: Pull main branch
-      #   run: |
-      #     git fetch origin
-      #     git checkout main
-      #     git pull
+      - name: Pull main branch
+        run: |
+          git fetch origin
+          git checkout main
+          git pull
 
-      # - name: Commit and push changes
-      #   run: |
-      #     git config --local user.name "github-actions[bot]"
-      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
-      #     git add scraping/data/*.csv
-      #     git diff --quiet && git diff --staged --quiet || git commit -m "Update CSV data"
-      #     git push origin main
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add sent_events.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update Event Cache"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
