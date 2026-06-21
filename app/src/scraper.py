@@ -60,7 +60,9 @@ class Scraper:
 
     def _fetch_page(self) -> requests.Response:
         """URLにGETリクエストを送り、レスポンスを返す（リトライ対象のメソッド）。"""
-        return requests.get(self.url, timeout=10)
+        response = requests.get(self.url, timeout=10)
+        response.raise_for_status()
+        return response
 
     def _parse_event(self, div) -> Event | None:
         link = div.find("a")

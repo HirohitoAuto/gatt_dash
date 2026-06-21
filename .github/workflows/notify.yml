@@ -43,7 +43,7 @@ jobs:
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git add sent_events.json
+          git add app/sent_events.json
           git diff --quiet && git diff --staged --quiet || git commit -m "Update Event Cache"
           git push origin main
         env:

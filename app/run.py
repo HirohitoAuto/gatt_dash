@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import requests
 from dotenv import load_dotenv
 from src.scraper import Event, Scraper
 from src.utils.line_messenger import LineMessenger
@@ -50,8 +51,13 @@ def main():
             raise ValueError(f"{key} が設定されていません")
 
     # targetイベントを抽出
-    scraper = Scraper(web_page_url)
-    unresponded_events = scraper.fetch_events()
+    try:
+        scraper = Scraper(web_page_url)
+        unresponded_events = scraper.fetch_events()
+    except requests.RequestException as e:
+        print(f"スクレイピング失敗: {e}")
+        return
+
     if not unresponded_events:
         print("イベントはありません。")
         return
@@ -71,7 +77,12 @@ def main():
             print(f"  場所: {event.location}")
             print(f"  参加人数: {event.participants}")
             print(f"  ステータス: {event.status}")
-            messenger.push_message(_create_message(event))
+            # LINEに通知
+            try:
+                messenger.push_message(_create_message(event))
+            except requests.RequestException as e:
+                print(f"LINE送信失敗: {event.title} - {e}")
+                continue
             store.mark_as_sent(event_id)
 
         store.save()
