@@ -16,5 +16,6 @@ class LineMessenger:
             "Authorization": f"Bearer {self.channel_access_token}",
         }
         data = {"to": self.group_id, "messages": [{"type": "text", "text": message}]}
-        response = requests.post(url, json=data, headers=headers)
+        response = requests.post(url, json=data, headers=headers, timeout=10)
+        response.raise_for_status()
         return response

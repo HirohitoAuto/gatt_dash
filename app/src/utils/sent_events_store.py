@@ -5,7 +5,7 @@ from pathlib import Path
 class SentEventsStore:
     """送信済みイベントのIDをJSONファイルで管理するクラス。"""
 
-    def __init__(self, store_path: str = "sent_events.json"):
+    def __init__(self, store_path: str | Path = "sent_events.json"):
         self._path = Path(store_path)
         self._sent: set[str] = self._load()
 
