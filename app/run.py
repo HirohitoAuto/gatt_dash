@@ -12,11 +12,6 @@ env_path = script_dir.parent / ".env"
 if env_path.exists():
     load_dotenv(dotenv_path=env_path)
 
-# 環境変数の取得
-channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
-group_id = os.getenv("LINE_GROUP_ID", "")
-web_page_url = os.getenv("WEB_PAGE_URL", "")
-
 # 通知対象のイベントの場所を指定
 target_location = ["東住吉小学校"]
 
@@ -41,6 +36,19 @@ https://gat-batminton.1net.jp/137215.html#google_vignette
 
 
 def main():
+    # 環境変数の取得とバリデーション
+    channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
+    group_id = os.getenv("LINE_GROUP_ID", "")
+    web_page_url = os.getenv("WEB_PAGE_URL", "")
+
+    for key, val in [
+        ("LINE_CHANNEL_ACCESS_TOKEN", channel_access_token),
+        ("LINE_GROUP_ID", group_id),
+        ("WEB_PAGE_URL", web_page_url),
+    ]:
+        if not val:
+            raise ValueError(f"{key} が設定されていません")
+
     # targetイベントを抽出
     scraper = Scraper(web_page_url)
     unresponded_events = scraper.fetch_events()
