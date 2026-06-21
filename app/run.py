@@ -56,7 +56,8 @@ def main():
         print("イベントはありません。")
         return
     else:
-        store = SentEventsStore("sent_events.json")
+        store = SentEventsStore(script_dir / "sent_events.json")
+        messenger = LineMessenger(channel_access_token, group_id)
         for event in unresponded_events:
             if event.location not in target_location:
                 continue
@@ -70,8 +71,6 @@ def main():
             print(f"  場所: {event.location}")
             print(f"  参加人数: {event.participants}")
             print(f"  ステータス: {event.status}")
-            # LineMessengerを初期化
-            messenger = LineMessenger(channel_access_token, group_id)
             messenger.push_message(_create_message(event))
             store.mark_as_sent(event_id)
 
