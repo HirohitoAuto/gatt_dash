@@ -91,7 +91,7 @@ git log --oneline -1
 ```
 
 ## Notes
-
+- Commitメッセージは必ず日本語で作成してください
 - ステージされていないファイルは対象外。必要に応じてユーザーに `git add` を案内する。
 - `git diff --staged` の出力が大きい場合は、変更ファイル一覧 (`git diff --staged --name-status`) も参照して要約する。
 - breaking change がある場合は footer に `BREAKING CHANGE: <説明>` を追記する。
