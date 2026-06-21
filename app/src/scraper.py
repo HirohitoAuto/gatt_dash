@@ -1,11 +1,9 @@
-import os
 import re
 from dataclasses import dataclass
 from datetime import date as _date
 
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -55,10 +53,6 @@ class Scraper:
             if event:
                 events.append(event)
         return events
-
-    def fetch_unresponded_events(self) -> list[Event]:
-        """参加予定・検討中・不参加予定のステータスが付いていないイベントのみを返す。"""
-        return [e for e in self.fetch_events() if e.status not in _RESPONDED_STATUSES]
 
     # ------------------------------------------------------------------
     # private
@@ -165,31 +159,3 @@ class Scraper:
         if "不参加" in button_values and "参加" not in button_values:
             return "参加予定"
         return "検討中"
-
-
-if __name__ == "__main__":
-    load_dotenv()
-
-    url = os.getenv("WEB_PAGE_URL", "https://gatt.jp/")
-    if not url:
-        raise ValueError("WEB_PAGE_URL を .env ファイルに設定してください")
-
-    scraper = Scraper(url)
-
-    print("=" * 60)
-    print("未回答のイベント一覧")
-    print("=" * 60)
-
-    try:
-        unresponded_events = scraper.fetch_unresponded_events()
-        if unresponded_events:
-            for event in unresponded_events:
-                print(f"\n【{event.title}】")
-                print(f"  日時: {event.date}")
-                print(f"  場所: {event.location}")
-                print(f"  参加人数: {event.participants}")
-                print(f"  ステータス: {event.status}")
-        else:
-            print("\n未回答のイベントはありません。")
-    except Exception as e:
-        print(f"エラーが発生しました: {e}")
