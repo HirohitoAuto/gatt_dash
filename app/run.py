@@ -23,11 +23,13 @@ def _event_id(event: Event) -> str:
 
 
 def _create_message(event: Event) -> str:
+    date_str = str(event.date)
+    formatted_date = f"{date_str[:4]}/{int(date_str[4:6])}/{int(date_str[6:])}"
     message = f"""
 🆕 新規イベント
 
 【{event.title}】
-    - 日付: {event.date}
+    - 日付: {formatted_date}
     - 場所: {event.location}
     - 参加人数: {event.participants}
 
