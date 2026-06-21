@@ -6,6 +6,12 @@ from datetime import date as _date
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 # ステータスとして設定済みと判断するラベル（これらを除外）
 _RESPONDED_STATUSES = {"参加予定", "検討中", "不参加予定"}
@@ -21,12 +27,25 @@ class Event:
 
 
 class Scraper:
-    def __init__(self, url: str):
+    def __init__(
+        self,
+        url: str,
+        max_retries: int = 3,
+        wait_min: float = 1.0,
+        wait_max: float = 10.0,
+    ):
         self.url = url
+        # リトライ設定をインスタンスごとに動的に適用
+        self._fetch_page = retry(
+            stop=stop_after_attempt(max_retries),
+            wait=wait_exponential(multiplier=1, min=wait_min, max=wait_max),
+            retry=retry_if_exception_type(requests.RequestException),
+            reraise=True,
+        )(self._fetch_page)
 
     def fetch_events(self) -> list[Event]:
         """イベントページを取得し、全イベントのリストを返す。"""
-        response = requests.get(self.url, timeout=10)
+        response = self._fetch_page()
         response.encoding = "shift_jis"
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -44,6 +63,10 @@ class Scraper:
     # ------------------------------------------------------------------
     # private
     # ------------------------------------------------------------------
+
+    def _fetch_page(self) -> requests.Response:
+        """URLにGETリクエストを送り、レスポンスを返す（リトライ対象のメソッド）。"""
+        return requests.get(self.url, timeout=10)
 
     def _parse_event(self, div) -> Event | None:
         link = div.find("a")
