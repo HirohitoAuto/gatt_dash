@@ -4,7 +4,6 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-
 from src.scraper import Event, Scraper
 from src.utils.line_messenger import LineMessenger
 from src.utils.sent_events_store import SentEventsStore
@@ -28,20 +27,42 @@ def _event_id(event: Event) -> str:
     return f"{event.date}_{event.location}_{event.title}"
 
 
-def _create_message(event: Event) -> str:
+def _create_body_contents(event: Event) -> list:
+    """Flex MessageのbodyContents用リストを生成する。
+
+    Args:
+        event (Event): イベント情報
+
+    Returns:
+        list: Flex Messageのbody contentsリスト
+    """
     date_str = str(event.date)
     formatted_date = f"{date_str[:4]}/{int(date_str[4:6])}/{int(date_str[6:])}"
-    message = f"""
-🆕 新規イベント
-
-【{event.title}】
-    - 日付: {formatted_date}
-    - 場所: {event.location}
-    - 参加人数: {event.participants}
-
-https://gat-batminton.1net.jp/137215.html#google_vignette
-"""
-    return message.strip()
+    return [
+        {
+            "type": "text",
+            "text": f"【{event.title}】",
+            "wrap": True,
+            "weight": "bold",
+            "margin": "md",
+        },
+        *[
+            {
+                "type": "text",
+                "wrap": True,
+                "margin": "sm",
+                "contents": [
+                    {"type": "span", "text": label, "weight": "bold"},
+                    {"type": "span", "text": f": {value}"},
+                ],
+            }
+            for label, value in [
+                ("日付", formatted_date),
+                ("場所", event.location),
+                ("参加人数", event.participants),
+            ]
+        ],
+    ]
 
 
 def main():
@@ -49,11 +70,13 @@ def main():
     channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
     group_id = os.getenv("LINE_GROUP_ID", "")
     web_page_url = os.getenv("WEB_PAGE_URL", "")
+    web_page_url_send = os.getenv("WEB_PAGE_URL_SEND", "")
 
     for key, val in [
         ("LINE_CHANNEL_ACCESS_TOKEN", channel_access_token),
         ("LINE_GROUP_ID", group_id),
         ("WEB_PAGE_URL", web_page_url),
+        ("WEB_PAGE_URL_SEND", web_page_url_send),
     ]:
         if not val:
             raise ValueError(f"{key} が設定されていません")
@@ -87,7 +110,11 @@ def main():
             print(f"  ステータス: {event.status}")
             # LINEに通知
             try:
-                messenger.push_message(_create_message(event))
+                messenger.push_url_button(
+                    web_page_url_send,
+                    header_text="🎉 新規イベント通知",
+                    body_contents=_create_body_contents(event),
+                )
             except requests.RequestException as e:
                 print(f"LINE送信失敗: {event.title} - {e}")
                 continue
