@@ -1,3 +1,4 @@
+import logging
 import re
 from dataclasses import dataclass
 from datetime import date as _date
@@ -5,11 +6,14 @@ from datetime import date as _date
 import requests
 from bs4 import BeautifulSoup
 from tenacity import (
+    before_sleep_log,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
+
+logger = logging.getLogger(__name__)
 
 # ステータスとして設定済みと判断するラベル（これらを除外）
 _RESPONDED_STATUSES = {"参加予定", "検討中", "不参加予定"}
@@ -25,13 +29,25 @@ class Event:
 
 
 class Scraper:
+    """イベント情報ページをスクレイピングし、イベント一覧を取得するクラス。
+
+    指数バックオフによるリトライ機能を持ち、一時的な通信障害に対して耐障害性を持つ。
+    """
+
     def __init__(
         self,
         url: str,
-        max_retries: int = 3,
-        wait_min: float = 1.0,
-        wait_max: float = 10.0,
+        max_retries: int = 5,
+        wait_min: float = 2.0,
+        wait_max: float = 60.0,
     ):
+        """
+        Args:
+            url: スクレイピング対象のURL
+            max_retries: 最大試行回数（初回含む）
+            wait_min: リトライ待機時間の最小値（秒）
+            wait_max: リトライ待機時間の最大値（秒）
+        """
         self.url = url
         # リトライ設定をインスタンスごとに動的に適用
         self._fetch_page = retry(
@@ -39,6 +55,7 @@ class Scraper:
             wait=wait_exponential(multiplier=1, min=wait_min, max=wait_max),
             retry=retry_if_exception_type(requests.RequestException),
             reraise=True,
+            before_sleep=before_sleep_log(logger, logging.INFO),
         )(self._fetch_page)
 
     def fetch_events(self) -> list[Event]:
@@ -60,7 +77,7 @@ class Scraper:
 
     def _fetch_page(self) -> requests.Response:
         """URLにGETリクエストを送り、レスポンスを返す（リトライ対象のメソッド）。"""
-        response = requests.get(self.url, timeout=10)
+        response = requests.get(self.url, timeout=(15, 30))
         response.raise_for_status()
         return response
 
