@@ -1,11 +1,17 @@
+import logging
 import os
 from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+
 from src.scraper import Event, Scraper
 from src.utils.line_messenger import LineMessenger
 from src.utils.sent_events_store import SentEventsStore
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 
 # Load environment variables from .env file if it exists
 script_dir = Path(__file__).parent
